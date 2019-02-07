@@ -1,23 +1,24 @@
 //This is a launch file for Kerbin, written for kOS 1.1.6.1
 //KSP version 1.6.1
 //Open our libs
-runoncepath("libs/util-lib.ks").
-
-SET TERMINAL:WIDTH to 70.
-SET TERMINAL:HEIGHT to 20.
-clearscreen.
-PRINT "###############################################".
-PRINT "# launchScripts/KerbinLaunch_v1.ks            #".
-PRINT "# github/PegasusScourge/KSP-1.6.1-kOS_Scripts #".
-PRINT "# KSP_Ver: 1.6.1, kOS_Ver: 1.1.6.1            #".
-PRINT "###############################################".
-PRINT "NOTICE: YOU MUST MANUALLY MANAGE STAGING!!!".
+runoncepath("libs/util-lib.ksm").
+runoncepath("libs/maneuver.ksm").
 
 KerbinLaunch().
 
 DECLARE FUNCTION KerbinLaunch {
 	parameter target_apoapsis to 75000.
 	parameter target_inclin to 0.
+	
+	SET TERMINAL:WIDTH to 70.
+	SET TERMINAL:HEIGHT to 20.
+	clearscreen.
+	PRINT "###################################################".
+	PRINT "# launchScripts/KerbinLaunch_v1.ks                #".
+	PRINT "# github.com/PegasusScourge/KSP-1.6.1-kOS_Scripts #".
+	PRINT "# KSP_Ver: 1.6.1, kOS_Ver: 1.1.6.1                #".
+	PRINT "###################################################".
+	//PRINT "NOTICE: YOU MUST MANUALLY MANAGE STAGING!!!".
 
 	//Get our information on the craft here
 	LOCAL almost_sas to "kill".
@@ -72,6 +73,10 @@ DECLARE FUNCTION KerbinLaunch {
 	
 	LOCK THROTTLE to tgt_throttle.
 
+	PRINT "###################################################".
+	PRINT "# launchScripts/KerbinLaunch_v1.ks                #".
+	PRINT "# github.com/PegasusScourge/KSP-1.6.1-kOS_Scripts #".
+	PRINT "# KSP_Ver: 1.6.1, kOS_Ver: 1.1.6.1                #".
 	PRINT "##############################################################".
 	PRINT "  Status:".
 	PRINT "  Current task:".
@@ -116,13 +121,13 @@ DECLARE FUNCTION KerbinLaunch {
 		
 		//Display our hud
 		
-		PRINT "                                   " AT(20,1). PRINT SHIP:STATUS AT(20,1).
-		PRINT "                                   " AT(20,2). PRINT currenttask AT (20,2).
-		PRINT "                                   " AT(20,4). PRINT ROUND(SHIP:ALTITUDE,0) AT(20,4).
-		PRINT "                                   " AT(20,5). PRINT ROUND(target_apoapsis,0) + "/" + ROUND(SHIP:APOAPSIS,0) AT(20,5).
-		PRINT "                                   " AT(20,6). PRINT ROUND(twr,2) AT(20,6).
-		PRINT "                                   " AT(20,7). PRINT ROUND(ship_acc,3) + " m/s^2" AT(20,7).
-		PRINT "                                   " AT(20,9). PRINT ROUND(ship_thrust) + " kN" AT(20,9).
+		PRINT "                                   " AT(20,5). PRINT SHIP:STATUS AT(20,5).
+		PRINT "                                   " AT(20,6). PRINT currenttask AT (20,6).
+		PRINT "                                   " AT(20,8). PRINT ROUND(SHIP:ALTITUDE,0) AT(20,8).
+		PRINT "                                   " AT(20,9). PRINT ROUND(target_apoapsis,0) + "/" + ROUND(SHIP:APOAPSIS,0) AT(20,9).
+		PRINT "                                   " AT(20,10). PRINT ROUND(twr,2) AT(20,10).
+		PRINT "                                   " AT(20,11). PRINT ROUND(ship_acc,3) + " m/s^2" AT(20,11).
+		PRINT "                                   " AT(20,13). PRINT ROUND(ship_thrust) + " kN" AT(20,13).
 		
 		//Do updates
 		IF NOT (ship_thrust <= 0.1) {
@@ -182,6 +187,20 @@ DECLARE FUNCTION KerbinLaunch {
 	PRINT "                                   " AT(20,2). PRINT currenttask AT (20,2).
 	WAIT UNTIL SHIP:ALTITUDE > 70000.
 	
+	SET currenttask to "Handing control to maneuver node func".
+	PRINT "                                   " AT(20,1). PRINT SHIP:STATUS AT(20,1).
+	PRINT "                                   " AT(20,2). PRINT currenttask AT (20,2).
 	SET mynode to NODE(TIME:SECONDS + ETA:APOAPSIS, 0, 0, get_circ_dv(target_apoapsis)).
 	ADD mynode.
+	WAIT 2.
+	execute_maneuver().
+	
+	//We can now remove the launch script from the disk
+	PRINT "### LAUNCH ###".
+	PRINT "Removing launch scripts and setting new boot file".
+	deletepath("1:/launch.ks").
+	copypath("0:/boot/boot_space.ks", "1:/boot/boot_space.ks").
+	SET CORE:BOOTFILENAME to "1:/boot/boot_space.ks".
+	PRINT CORE:BOOTFILENAME.
+	PRINT "###".
 }

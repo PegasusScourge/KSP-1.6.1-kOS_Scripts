@@ -130,11 +130,11 @@ DECLARE FUNCTION KerbinLaunch {
 		PRINT "                                   " AT(20,13). PRINT ROUND(ship_thrust) + " kN" AT(20,13).
 		
 		//Do updates
-		IF NOT (ship_thrust <= 0.1) {
-			SET twr to ship_mass / ship_thrust.
-		} else {
-			SET twr to 0.
-		}
+		//IF NOT (ship_thrust <= 0.1) {
+			//SET twr to ship_mass / ship_thrust.
+		//} else {
+		//	SET twr to 0.
+		//}
 		
 		//Figure out our next move
 		IF task = 0 { //Intitial ascent
@@ -183,13 +183,13 @@ DECLARE FUNCTION KerbinLaunch {
 	
 	//We have an apoapsis, now create a maneuver node and call the maneuver burner to circularise.
 	SET currenttask to "Waiting until out of atmo".
-	PRINT "                                   " AT(20,1). PRINT SHIP:STATUS AT(20,1).
-	PRINT "                                   " AT(20,2). PRINT currenttask AT (20,2).
+	PRINT "                                   " AT(20,5). PRINT SHIP:STATUS AT(20,5).
+	PRINT "                                   " AT(20,6). PRINT currenttask AT (20,6).
 	WAIT UNTIL SHIP:ALTITUDE > 70000.
 	
 	SET currenttask to "Handing control to maneuver node func".
-	PRINT "                                   " AT(20,1). PRINT SHIP:STATUS AT(20,1).
-	PRINT "                                   " AT(20,2). PRINT currenttask AT (20,2).
+	PRINT "                                   " AT(20,5). PRINT SHIP:STATUS AT(20,5).
+	PRINT "                                   " AT(20,6). PRINT currenttask AT (20,6).
 	SET mynode to NODE(TIME:SECONDS + ETA:APOAPSIS, 0, 0, get_circ_dv(target_apoapsis)).
 	ADD mynode.
 	WAIT 2.
@@ -198,7 +198,8 @@ DECLARE FUNCTION KerbinLaunch {
 	//We can now remove the launch script from the disk
 	PRINT "### LAUNCH ###".
 	PRINT "Removing launch scripts and setting new boot file".
-	deletepath("1:/launch.ks").
+	deletepath("1:/boot/boot_launch.ks").
+	deletepath("1:/launch.ksm").
 	copypath("0:/boot/boot_space.ks", "1:/boot/boot_space.ks").
 	SET CORE:BOOTFILENAME to "1:/boot/boot_space.ks".
 	PRINT CORE:BOOTFILENAME.

@@ -1,6 +1,10 @@
 runoncepath("libs/util-lib.ksm").
 DECLARE FUNCTION execute_maneuver {
 	parameter precision to 0.3.
+	
+	SET TERMINAL:WIDTH to 70.
+	SET TERMINAL:HEIGHT to 20.
+	
 	LOCAL mynode to nextnode.
 	IF precision < 0.3 {
 		SET precision to 0.3.

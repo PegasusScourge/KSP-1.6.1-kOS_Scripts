@@ -1,8 +1,8 @@
 PRINT " ".
 PRINT "[## BOOTFUNC ##]".
 
-IF (CORE:CURRENTVOLUME:FREESPACE < 9000) {
-	PRINT " WARN WARN [## This boot function requires min free 9k space to copy it's files! ##] WARN WARN".
+IF (CORE:CURRENTVOLUME:FREESPACE < 8000) {
+	PRINT "WARN WARN [## This boot function requires min free 8k space to copy it's files! ##] WARN WARN".
 }
 
 //Copy the kerbin launch script

@@ -2,7 +2,7 @@ PRINT " ".
 PRINT "[## BOOTFUNC ##]".
 
 IF (CORE:CURRENTVOLUME:FREESPACE < 5000) {
-	PRINT " WARN WARN [## This boot function requires min 5k free space to copy it's files! ##] WARN WARN".
+	PRINT "WARN WARN [## This boot function requires min 5k free space to copy it's files! ##] WARN WARN".
 }
 
 //Copy the maneuver script

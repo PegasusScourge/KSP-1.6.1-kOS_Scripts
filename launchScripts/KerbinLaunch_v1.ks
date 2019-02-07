@@ -1,5 +1,8 @@
 //This is a launch file for Kerbin, written for kOS 1.1.6.1
 //KSP version 1.6.1
+//Open our libs
+runoncepath("libs/util-lib.ks").
+
 SET TERMINAL:WIDTH to 70.
 SET TERMINAL:HEIGHT to 20.
 clearscreen.
@@ -8,7 +11,7 @@ PRINT "# launchScripts/KerbinLaunch_v1.ks            #".
 PRINT "# github/PegasusScourge/KSP-1.6.1-kOS_Scripts #".
 PRINT "# KSP_Ver: 1.6.1, kOS_Ver: 1.1.6.1            #".
 PRINT "###############################################".
-PRINT "".
+PRINT "NOTICE: YOU MUST MANUALLY MANAGE STAGING!!!".
 
 KerbinLaunch().
 
@@ -174,36 +177,11 @@ DECLARE FUNCTION KerbinLaunch {
 	}
 	
 	//We have an apoapsis, now create a maneuver node and call the maneuver burner to circularise.
-	PRINT "Awaiting leaving atmosphere...".
+	SET currenttask to "Waiting until out of atmo".
+	PRINT "                                   " AT(20,1). PRINT SHIP:STATUS AT(20,1).
+	PRINT "                                   " AT(20,2). PRINT currenttask AT (20,2).
 	WAIT UNTIL SHIP:ALTITUDE > 70000.
 	
 	SET mynode to NODE(TIME:SECONDS + ETA:APOAPSIS, 0, 0, get_circ_dv(target_apoapsis)).
 	ADD mynode.
-}
-
-DECLARE FUNCTION get_circ_dv {
-
-	parameter alt.
-
-	local mu is body:mu.
-	local br is body:radius.
-
-	// present orbit properties
-	local vom is velocity:orbit:mag.               // actual velocity
-	local r is br + altitude.                      // actual distance to body
-	local ra is br + apoapsis.                     // radius at burn apsis
-	local v1 is sqrt( vom^2 + 2*mu*(1/ra - 1/r) ). // velocity at burn apsis
-
-	local sma1 is (periapsis + 2*br + apoapsis)/2. // semi major axis present orbit
-
-	// future orbit properties
-	local r2 is br + apoapsis.               // distance after burn at apoapsis
-	local sma2 is ((alt * 1) + 2*br + apoapsis)/2. // semi major axis target orbit
-	local v2 is sqrt( vom^2 + (mu * (2/r2 - 2/r + 1/sma1 - 1/sma2 ) ) ).
-
-	// create node
-	local deltav is v2 - v1.
-	
-	return deltav.
-
 }

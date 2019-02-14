@@ -1,50 +1,71 @@
-//This is a launch file for Kerbin, written for kOS 1.1.6.1
-//KSP version 1.6.1
+parameter tap, tin, mtwr, atlim.
+
 //Open our libs
 runoncepath("libs/util-lib.ksm").
 runoncepath("libs/maneuver.ksm").
 
-KerbinLaunch().
+//parameter tap to 75000.
+//parameter tin to 0.
+//parameter mtwr to 2.2.
+//parameter atlim to 70000.
 
-DECLARE FUNCTION KerbinLaunch {
+AtmoLaunch(tap, tin, mtwr, atlim).
+
+DECLARE FUNCTION AtmoLaunch {
 	parameter target_apoapsis to 75000.
 	parameter target_inclin to 0.
+	parameter max_twr to 2.2.
+	parameter atmo_lim to 70000.
 	
 	SET TERMINAL:WIDTH to 70.
 	SET TERMINAL:HEIGHT to 20.
 	clearscreen.
 	PRINT "###################################################".
-	PRINT "# launchScripts/KerbinLaunch_v1.ks                #".
+	PRINT "# launchScripts/AtmoLaunch.ks                     #".
 	PRINT "# github.com/PegasusScourge/KSP-1.6.1-kOS_Scripts #".
 	PRINT "# KSP_Ver: 1.6.1, kOS_Ver: 1.1.6.1                #".
 	PRINT "###################################################".
 	//PRINT "NOTICE: YOU MUST MANUALLY MANAGE STAGING!!!".
 
-	//Get our information on the craft here
+	// --- Get our information on the craft here ---
 	LOCAL almost_sas to "kill".
 	LOCAL ship_acc to 0.
 	LOCAL ship_thrust to 0.
 	LOCAL ship_thrust_max to 0.
 	LOCAL ship_mass to 0.
-	LOCAL g to CONSTANT:G.
+	LOCAL gacc to 9.8.
+	
+	LOCAL tgt_inclin to target_inclin.
+	IF target_inclin > 180 {
+		SET tgt_inclin to -180 + target_inclin.
+	}
+	IF target_inclin < -180 {
+		SET tgt_inclin to 180 - target_inclin.
+	}
+	LOCAL ship_heading_ang to 90 + tgt_inclin.
 	
 	LOCAL twr to 0.
+	LOCAL twr_max to 0.
 	LOCAL ship_weight to 0.
 
-	//Set up the craft
+	// --- Set up the craft ---
 	PRINT "Setting up the craft. Do not touch SAS, RCS, THROTTLE etc.".
 	RCS OFF.
 	SAS OFF.
 	LOCK THROTTLE to 1.
 	LOCK STEERING to almost_sas.
 
-	//Setup our locked variables
+	// --- LOCK VARIABLES HERE ---
 	LOCK ship_mass to SHIP:MASS.
 	LOCK ship_thrust to SHIP:MAXTHRUSTAT(SHIP:Q) * THROTTLE.
-	LOCK ship_acc to ship_thrust / ship_mass.
-	LOCK ship_weight to ship_mass*g.
+	LOCK ship_thrust_max to SHIP:MAXTHRUSTAT(SHIP:Q).
+	LOCK ship_acc to (ship_thrust / ship_mass) - gacc.
+	LOCK ship_weight to ship_mass * gacc.
+	LOCK twr to ship_thrust / ship_weight.
+	LOCK twr_max to ship_thrust_max / ship_weight.
 	
-	PRINT "[ Got setup, vessel characteristics: {Mass=" + ROUND(ship_mass,2) + ", Status=" + SHIP:STATUS + "} ]".
+	PRINT "[ Got setup, vessel characteristics: {Mass=" + ROUND(ship_mass,2) + ", Status=" + SHIP:STATUS + ", gacc=" + gacc + "} ]".
+	PRINT "[ Target inclination: " + target_inclin + " --> " + tgt_inclin + ", HDG: " + ship_heading_ang + "]".
 
 	//Check we are landed:
 	IF NOT SHIP:STATUS:CONTAINS("PRELAUNCH") {
@@ -53,7 +74,6 @@ DECLARE FUNCTION KerbinLaunch {
 		PRINT "[ This program will now terminate    ]".
 		return.
 	}
-
 
 	PRINT "[ Awaiting vessel launch.... ]".
 
@@ -71,10 +91,13 @@ DECLARE FUNCTION KerbinLaunch {
 	LOCAL task to 0.
 	LOCAL tgt_throttle to 1.
 	
+	LOCAL enginesList to 0.
+	LIST ENGINES in enginesList.
+	
 	LOCK THROTTLE to tgt_throttle.
 
 	PRINT "###################################################".
-	PRINT "# launchScripts/KerbinLaunch_v1.ks                #".
+	PRINT "# launchScripts/AtmoLaunch.ks                     #".
 	PRINT "# github.com/PegasusScourge/KSP-1.6.1-kOS_Scripts #".
 	PRINT "# KSP_Ver: 1.6.1, kOS_Ver: 1.1.6.1                #".
 	PRINT "##############################################################".
@@ -90,7 +113,7 @@ DECLARE FUNCTION KerbinLaunch {
 	PRINT "##############################################################".
 	
 	WHEN SHIP:ALTITUDE > 300 THEN {
-		LOCK STEERING to HEADING(90, 90).
+		LOCK STEERING to HEADING(ship_heading_ang, 90).
 	}
 	
 	LOCAL task_1_pitchvels to 150. //Start velocity
@@ -107,12 +130,12 @@ DECLARE FUNCTION KerbinLaunch {
 	
 	//task_1_pitchprog
 	WHEN SHIP:VERTICALSPEED > task_1_pitchvels THEN{
-		LOCK STEERING to HEADING(90, task_1_pitchangs - (task_1_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_1_pitchvels) / (task_1_pitchvele - task_1_pitchvels)))).
+		LOCK STEERING to HEADING(ship_heading_ang, task_1_pitchangs - (task_1_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_1_pitchvels) / (task_1_pitchvele - task_1_pitchvels)))).
 	}
 	
 	//task_2_pitchprog
 	WHEN SHIP:VELOCITY:ORBIT:MAG  > task_2_pitchvels THEN{
-		LOCK STEERING to HEADING(90, task_2_pitchangs - (task_2_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_2_pitchvels) / (task_2_pitchvele - task_2_pitchvels)))).
+		LOCK STEERING to HEADING(ship_heading_ang, task_2_pitchangs - (task_2_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_2_pitchvels) / (task_2_pitchvele - task_2_pitchvels)))).
 	}
 
 	UNTIL sub_orbital{
@@ -130,11 +153,19 @@ DECLARE FUNCTION KerbinLaunch {
 		PRINT "                                   " AT(20,13). PRINT ROUND(ship_thrust) + " kN" AT(20,13).
 		
 		//Do updates
-		//IF NOT (ship_thrust <= 0.1) {
-			//SET twr to ship_mass / ship_thrust.
-		//} else {
-		//	SET twr to 0.
-		//}
+		
+		IF task > 0 AND task < 3 {
+			//Control the throttle
+			IF twr > max_twr {
+				IF twr_max = 0 {
+					SET tgt_throttle to 1.
+				} ELSE {
+					SET tgt_throttle to max_twr / twr_max.
+				}
+			} ELSE IF tgt_throttle < 1{
+				SET tgt_throttle to 1.
+			}
+		}
 		
 		//Figure out our next move
 		IF task = 0 { //Intitial ascent
@@ -151,7 +182,7 @@ DECLARE FUNCTION KerbinLaunch {
 			IF SHIP:VELOCITY:ORBIT:MAG > task_1_pitchvele {
 				SET currenttask to "Gaining horizontal speed".
 				SET task to 2.
-				LOCK STEERING to HEADING(90, task_1_pitchange).
+				LOCK STEERING to HEADING(ship_heading_ang, task_1_pitchange).
 			}
 		} ELSE IF task = 2 {
 			//Pitch from task_2_pitchangs deg to task_2_pitchange deg
@@ -160,13 +191,13 @@ DECLARE FUNCTION KerbinLaunch {
 			IF SHIP:VELOCITY:ORBIT:MAG > task_2_pitchvele {
 				SET currenttask to "Rising apoapsis".
 				SET task to 3.
-				LOCK STEERING to HEADING(90, task_2_pitchange).
+				LOCK STEERING to HEADING(ship_heading_ang, task_2_pitchange).
 			}
 		} ELSE IF task = 3 {
 			//If we get to 90%+ of the target apoapsis, throttle down and lock to prograde
 			IF (SHIP:APOAPSIS / target_apoapsis) > 0.9 {
 				LOCK STEERING to SHIP:VELOCITY:ORBIT.
-				SET tgt_throttle to 0.3.
+				SET tgt_throttle to (0.5/twr_max).
 				SET task to 4.
 				SET currenttask to "Finalising apoapsis".
 			}
@@ -174,9 +205,22 @@ DECLARE FUNCTION KerbinLaunch {
 			IF SHIP:APOAPSIS >= (target_apoapsis + 500) {
 				UNLOCK STEERING.
 				SAS ON.
-				LOCK THROTTLE to 0.
+				SET tgt_throttle to 0.
 				SET sub_orbital to TRUE.
 				SET currenttask to "Achieved target apoapsis!".
+			}
+		}
+		
+		//Check for staging:
+		FOR e in enginesList {
+			IF e:FLAMEOUT OR SHIP:MAXTHRUSTAT(SHIP:Q) = 0{
+				STAGE.
+				//PRINT "Staging!".
+				
+				UNTIL STAGE:READY { WAIT 0. }
+				
+				LIST ENGINES in enginesList.
+				BREAK.
 			}
 		}
 	}
@@ -185,7 +229,9 @@ DECLARE FUNCTION KerbinLaunch {
 	SET currenttask to "Waiting until out of atmo".
 	PRINT "                                   " AT(20,5). PRINT SHIP:STATUS AT(20,5).
 	PRINT "                                   " AT(20,6). PRINT currenttask AT (20,6).
-	WAIT UNTIL SHIP:ALTITUDE > 70000.
+	WAIT UNTIL SHIP:ALTITUDE > atmo_lim.
+	
+	SET WARP to 0.
 	
 	SET currenttask to "Handing control to maneuver node func".
 	PRINT "                                   " AT(20,5). PRINT SHIP:STATUS AT(20,5).
@@ -193,15 +239,11 @@ DECLARE FUNCTION KerbinLaunch {
 	SET mynode to NODE(TIME:SECONDS + ETA:APOAPSIS, 0, 0, get_circ_dv(target_apoapsis)).
 	ADD mynode.
 	WAIT 2.
-	execute_maneuver().
 	
-	//We can now remove the launch script from the disk
-	PRINT "### LAUNCH ###".
-	PRINT "Removing launch scripts and setting new boot file".
-	deletepath("1:/boot/boot_launch.ks").
-	deletepath("1:/launch.ksm").
-	copypath("0:/boot/boot_space.ks", "1:/boot/boot_space.ks").
-	SET CORE:BOOTFILENAME to "1:/boot/boot_space.ks".
-	PRINT CORE:BOOTFILENAME.
-	PRINT "###".
+	UNLOCK STEERING.
+	SAS ON.
+	SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
+	UNLOCK THROTTLE.
+	
+	execute_maneuver().
 }

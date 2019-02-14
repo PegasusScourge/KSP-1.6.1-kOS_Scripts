@@ -4,6 +4,7 @@
 //returns dv
 DECLARE FUNCTION get_circ_dv {
 	parameter alt.
+	
 	local mu is body:mu.
 	local br is body:radius.
 	// present orbit properties

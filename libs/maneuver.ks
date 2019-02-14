@@ -9,6 +9,13 @@ DECLARE FUNCTION execute_maneuver {
 	IF precision < 0.3 {
 		SET precision to 0.3.
 	}
+	
+	//Check to see if we have thrust
+	IF SHIP:MAXTHRUST = 0 {
+		PRINT "ERROR: No current thrust! Did you forget to enable engines?".
+		return.
+	}
+	
 	clearscreen.
 	PRINT "###################################################".
 	PRINT "# libs/maneuver.ks                                #".
@@ -29,6 +36,12 @@ DECLARE FUNCTION execute_maneuver {
 	LOCAL burnhalfT to burnT/2.
 	LOCAL timeBurnStart to 0. LOCK timeBurnStart to mynode:ETA - burnhalfT.
 	LOCAL l_timeBurnStart to TIME:SECONDS + timeBurnStart.
+	
+	LOCAL gacc to 9.8.
+	LOCK ship_thrust_max to SHIP:MAXTHRUSTAT(SHIP:Q).
+	LOCK ship_weight to SHIP:MASS * gacc.
+	LOCK twr_max to ship_thrust_max / ship_weight.
+	
 	PRINT "DeltaV: " + ROUND(mynode:DELTAV:MAG,2) + "m/s".
 	PRINT "accl: " + ROUND(accl,2) + "m/s^2".
 	PRINT "burnT: " + ROUND(burnT,1) + "s".
@@ -39,6 +52,7 @@ DECLARE FUNCTION execute_maneuver {
 		WAIT 0.001.
 	}
 	
+	SET WARP to 0.
 	SET throt to 1.
 	UNTIL mynode:DELTAV:MAG < 30 {
 		PRINT "                                   " AT(0,7). PRINT "DeltaV: " + ROUND(mynode:DELTAV:MAG,2) + "m/s" AT(0,7).
@@ -46,7 +60,7 @@ DECLARE FUNCTION execute_maneuver {
 		WAIT 0.001.
 	}
 	
-	SET throt to 0.2.
+	SET throt to (0.5/twr_max).
 	UNTIL mynode:DELTAV:MAG < precision {
 		PRINT "                                   " AT(0,7). PRINT "DeltaV: " + ROUND(mynode:DELTAV:MAG,2) + "m/s" AT(0,7).
 		PRINT "                                   " AT(0,10). PRINT "Finalising burn..." AT(0,10).

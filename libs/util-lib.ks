@@ -21,3 +21,10 @@ DECLARE FUNCTION get_circ_dv {
 	return dv.
 
 }
+
+DECLARE FUNCTION displace_vec_ang {
+	parameter b.
+	parameter theta.
+	
+	LOCAL h to b:X.
+}

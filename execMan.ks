@@ -1,3 +1,1 @@
-runoncepath("libs/maneuver.ksm").
-
-execute_maneuver().
+runpath("libs/maneuver.ksm", 0.3).

@@ -1,3 +1,7 @@
+parameter prec.
+
+execute_maneuver(prec).
+
 runoncepath("libs/util-lib.ksm").
 DECLARE FUNCTION execute_maneuver {
 	parameter precision to 0.3.

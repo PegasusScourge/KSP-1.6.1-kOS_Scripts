@@ -2,7 +2,6 @@ parameter tap, tin, mtwr, atlim.
 
 //Open our libs
 runoncepath("libs/util-lib.ksm").
-runoncepath("libs/maneuver.ksm").
 
 //parameter tap to 75000.
 //parameter tin to 0.
@@ -44,9 +43,14 @@ DECLARE FUNCTION AtmoLaunch {
 	}
 	LOCAL ship_heading_ang to 90 + tgt_inclin.
 	
+	//TWR and weight information
 	LOCAL twr to 0.
 	LOCAL twr_max to 0.
 	LOCAL ship_weight to 0.
+	
+	//Steering information
+	LOCAL steering_ideal to 0. //Where we want to point
+	SET steering_ideal to almost_sas.
 
 	// --- Set up the craft ---
 	PRINT "Setting up the craft. Do not touch SAS, RCS, THROTTLE etc.".
@@ -95,6 +99,7 @@ DECLARE FUNCTION AtmoLaunch {
 	LIST ENGINES in enginesList.
 	
 	LOCK THROTTLE to tgt_throttle.
+	LOCK STEERING to steering_ideal.
 
 	PRINT "###################################################".
 	PRINT "# launchScripts/AtmoLaunch.ks                     #".
@@ -113,7 +118,7 @@ DECLARE FUNCTION AtmoLaunch {
 	PRINT "##############################################################".
 	
 	WHEN SHIP:ALTITUDE > 300 THEN {
-		LOCK STEERING to HEADING(ship_heading_ang, 90).
+		SET steering_ideal to HEADING(ship_heading_ang, 90).
 	}
 	
 	LOCAL task_1_pitchvels to 150. //Start velocity
@@ -130,12 +135,12 @@ DECLARE FUNCTION AtmoLaunch {
 	
 	//task_1_pitchprog
 	WHEN SHIP:VERTICALSPEED > task_1_pitchvels THEN{
-		LOCK STEERING to HEADING(ship_heading_ang, task_1_pitchangs - (task_1_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_1_pitchvels) / (task_1_pitchvele - task_1_pitchvels)))).
+		LOCK steering_ideal to HEADING(ship_heading_ang, task_1_pitchangs - (task_1_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_1_pitchvels) / (task_1_pitchvele - task_1_pitchvels)))).
 	}
 	
 	//task_2_pitchprog
 	WHEN SHIP:VELOCITY:ORBIT:MAG  > task_2_pitchvels THEN{
-		LOCK STEERING to HEADING(ship_heading_ang, task_2_pitchangs - (task_2_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_2_pitchvels) / (task_2_pitchvele - task_2_pitchvels)))).
+		LOCK steering_ideal to HEADING(ship_heading_ang, task_2_pitchangs - (task_2_pitchangd*((SHIP:VELOCITY:ORBIT:MAG - task_2_pitchvels) / (task_2_pitchvele - task_2_pitchvels)))).
 	}
 
 	UNTIL sub_orbital{
@@ -172,7 +177,6 @@ DECLARE FUNCTION AtmoLaunch {
 			IF SHIP:ALTITUDE > 6000 OR SHIP:VERTICALSPEED > 145 {
 				SET currenttask to "Pitch program".
 				SET task to 1.
-				//LOCK STEERING to HEADING(90, task_1_pitchangs).
 			}
 		} ELSE IF task = 1 { //Pitch program
 			//Pitch over in increments
@@ -182,7 +186,7 @@ DECLARE FUNCTION AtmoLaunch {
 			IF SHIP:VELOCITY:ORBIT:MAG > task_1_pitchvele {
 				SET currenttask to "Gaining horizontal speed".
 				SET task to 2.
-				LOCK STEERING to HEADING(ship_heading_ang, task_1_pitchange).
+				SET steering_ideal to HEADING(ship_heading_ang, task_1_pitchange).
 			}
 		} ELSE IF task = 2 {
 			//Pitch from task_2_pitchangs deg to task_2_pitchange deg
@@ -191,12 +195,12 @@ DECLARE FUNCTION AtmoLaunch {
 			IF SHIP:VELOCITY:ORBIT:MAG > task_2_pitchvele {
 				SET currenttask to "Rising apoapsis".
 				SET task to 3.
-				LOCK STEERING to HEADING(ship_heading_ang, task_2_pitchange).
+				SET steering_ideal to HEADING(ship_heading_ang, task_2_pitchange).
 			}
 		} ELSE IF task = 3 {
 			//If we get to 90%+ of the target apoapsis, throttle down and lock to prograde
 			IF (SHIP:APOAPSIS / target_apoapsis) > 0.9 {
-				LOCK STEERING to SHIP:VELOCITY:ORBIT.
+				SET steering_ideal to SHIP:VELOCITY:ORBIT.
 				SET tgt_throttle to (0.5/twr_max).
 				SET task to 4.
 				SET currenttask to "Finalising apoapsis".
@@ -245,5 +249,5 @@ DECLARE FUNCTION AtmoLaunch {
 	SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 	UNLOCK THROTTLE.
 	
-	execute_maneuver().
+	runpath("libs/maneuver.ksm", 0.3).
 }
